@@ -86,17 +86,19 @@ fun AppsScreen(navController: NavController) {
                 )
                 LazyColumn(
                     contentPadding = innerPadding,
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(15.dp),
                 ) {
                     appList.sortWith(compareBy { it.name })
                     items(appList) { item ->
                         Card(
                             elevation = CardDefaults.cardElevation(3.dp),
-                            shape = RoundedCornerShape(14.dp),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 6.dp, vertical = 6.dp)
-                                .background(CardDefaults.cardColors().containerColor)
+                                .padding(horizontal = 6.dp)
+                                .background(
+                                    CardDefaults.cardColors().containerColor.copy(0.4f),
+                                    RoundedCornerShape(14.dp)
+                                )
                                 .clickable {
                                     Toast
                                         .makeText(ctx, item.name, Toast.LENGTH_SHORT)
@@ -111,7 +113,7 @@ fun AppsScreen(navController: NavController) {
                                 Image(
                                     modifier = Modifier
                                         .size(70.dp)
-                                        .padding(8.dp)
+                                        .padding(12.dp)
                                         .clip(RoundedCornerShape(7.dp)),
                                     painter = rememberDrawablePainter(item.icon),
                                     contentDescription = item.name
@@ -137,16 +139,14 @@ fun AppsScreen(navController: NavController) {
                                 }
                             }
                         }
-
                     }
                 }
-
-                AppScreenWithLifecycle {
-                    Toast.makeText(ctx, "onLoad", Toast.LENGTH_SHORT).show()
-                    showDialogListener = true
-                    isLoaded = true
-                    Log.i("Screen model:", "-> onLoad appScreen: $showDialogListener")
-                }
+            }
+            AppScreenWithLifecycle {
+                Toast.makeText(ctx, "onLoad", Toast.LENGTH_SHORT).show()
+                showDialogListener = true
+                isLoaded = true
+                Log.i("Screen model:", "-> onLoad appScreen: $showDialogListener")
             }
         }
     )
@@ -159,7 +159,6 @@ fun AppScreenWithLifecycle(onLoad: () -> Unit) {
             Lifecycle.Event.ON_CREATE -> {
                 onLoad()
             }
-
             else -> {}
         }
     }
