@@ -11,6 +11,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -21,8 +22,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.darker.appsettings.app.ui.dialogs.LoadingAppsDialog
+import com.darker.appsettings.app.ui.dialogs.MyViewModel
 import com.darker.appsettings.app.ui.dialogs.totalApps
 import com.darker.appsettings.app.ui.lifecycle.OnLifecycleEvent
 import com.darker.appsettings.app.ui.model.ScreenModel
@@ -68,7 +71,7 @@ fun AppsScreen(navController: NavController) {
 //                }
 //                Log.i("• After Loading apps dialog:", "after totalApps=$totalApps")
 //                showDialogListener = false
-            } else if (!showDialogListener){
+            } else if (isLoaded){
                 Log.i(
                     "Screen model:",
                     "-> ShowLazyColumn: (true), ShowDialog: ($showDialogListener), isLoaded: ($isLoaded)"
@@ -92,11 +95,10 @@ fun AppsScreen(navController: NavController) {
             }
 
             AppScreenWithLifecycle {
-                Log.i("Screen model:", "-> Before onLoad: $showDialogListener")
                 Toast.makeText(ctx, "onLoad", Toast.LENGTH_SHORT).show()
                 showDialogListener = true
                 isLoaded = true
-                Log.i("Screen model:", "-> After onLoad: $showDialogListener")
+                Log.i("Screen model:", "-> onLoad appScreen: $showDialogListener")
             }
         }
     )
