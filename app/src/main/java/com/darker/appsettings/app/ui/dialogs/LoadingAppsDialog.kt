@@ -26,9 +26,10 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.darker.appsettings.app.ui.lifecycle.OnLifecycleEvent
-import com.darker.appsettings.app.ui.model.MyViewModel
+import com.darker.appsettings.app.ui.model.AppsInfo
+import com.darker.appsettings.app.ui.model.LoadingAppsThreadModel
 
-var listItems: MutableList<Unit> = mutableListOf()
+var appList = mutableListOf<AppsInfo>()
 var totalApps = 0
 
 @Composable
@@ -40,7 +41,7 @@ fun LoadingAppsDialog(pm: PackageManager, onFinish: () -> Unit) {
 
     Log.i("Anything", "----> startDialog condition")
 
-    val viewModel: MyViewModel = viewModel()
+    val viewModel: LoadingAppsThreadModel = viewModel()
 
     Dialog(
         onDismissRequest = { /*TODO*/ },
@@ -65,7 +66,7 @@ fun LoadingAppsDialog(pm: PackageManager, onFinish: () -> Unit) {
                 strokeWidth = 5.dp
             )
             Text(
-                text = loadedApps.value.toString(),
+                text = "${loadedApps.value} / $totalApps",
                 fontSize = 17.sp,
                 fontWeight = Bold,
                 modifier = Modifier
@@ -79,11 +80,9 @@ fun LoadingAppsDialog(pm: PackageManager, onFinish: () -> Unit) {
     if (startLoadApps) {
         Log.i("ANything", "----> startLoadApps condition")
         if (totalApps == 0) {
-            viewModel.startThread(pm, loadedApps)
-        }
-        Log.i("Loaded Apps", "loadedAppsFinal: ${loadedApps.value}")
-        if (loadedApps.value == totalApps) {
-//            onFinish()
+            viewModel.startThread(pm, loadedApps, {
+                onFinish()
+            })
         }
     }
 
