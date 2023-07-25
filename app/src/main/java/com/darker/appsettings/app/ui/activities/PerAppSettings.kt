@@ -6,10 +6,15 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
@@ -18,13 +23,21 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -35,6 +48,7 @@ import com.google.accompanist.systemuicontroller.rememberSystemUiController
 
 class PerAppSettings : ComponentActivity() {
 
+    @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val title = intent.getStringExtra("title") ?: packageName
@@ -47,8 +61,21 @@ class PerAppSettings : ComponentActivity() {
 
         setContent {
             AppSettings2Theme {
-                Actionbar(title, icon, this)
-                SwitchButton(enabledApps, sharedPrefs, packageName)
+                val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+                Scaffold(
+                    modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+                    topBar = { Actionbar(scrollBehavior, title, icon, this) },
+                    content = { innerPadding ->
+                        LazyColumn(
+                            contentPadding = innerPadding,
+                            modifier = Modifier.fillMaxHeight()
+                        ) {
+                            item {
+                                SwitchButton(enabledApps, sharedPrefs, packageName)
+                            }
+                        }
+                    }
+                )
             }
         }
     }
@@ -60,28 +87,47 @@ fun SwitchButton(
     sharedPrefs: SharedPreferences,
     packageName: String
 ) {
-    val isAppEnabled = enabledApps.contains(packageName)
-    Switch(
-        modifier = Modifier.padding(vertical = 8.dp),
-        checked = isAppEnabled,
-        onCheckedChange = {
-            val editor = sharedPrefs.edit()
-            if (it) {
-                enabledApps.add(packageName)
-            } else {
-                enabledApps.remove(packageName)
+    var isAppEnabled by remember { mutableStateOf(enabledApps.contains(packageName)) }
+    Column(
+        verticalArrangement = Arrangement.Center,
+        modifier = Modifier
+            .padding(vertical = 20.dp, horizontal = 12.dp)
+            .fillMaxWidth()
+            .background(
+                color = MaterialTheme.colorScheme.primaryContainer,
+                shape = RoundedCornerShape(20.dp)
+            )
+    ) {
+        Text(
+            text = "Enable module",
+            fontSize = 24.sp,
+            modifier = Modifier.padding(start = 15.dp),
+        )
+        Switch(
+            modifier = Modifier
+                .padding(10.dp)
+                .align(Alignment.End),
+            checked = isAppEnabled,
+            onCheckedChange = {
+                isAppEnabled = it
+                val editor = sharedPrefs.edit()
+                if (it) {
+                    enabledApps.add(packageName)
+                } else {
+                    enabledApps.remove(packageName)
+                }
+                editor.putStringSet("enabled_apps", enabledApps)
+                editor.apply()
+                editor.commit()
             }
-            editor.putStringSet("enabled_apps", enabledApps)
-            editor.apply()
-            editor.commit()
-        })
+        )
+    }
 }
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
-fun StatusBar() {
+fun StatusBar(scrollBehavior: TopAppBarScrollBehavior) {
     val systemUiController = rememberSystemUiController()
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val alpha = scrollBehavior.state.collapsedFraction
     val fgColor = TopAppBarDefaults.largeTopAppBarColors().scrolledContainerColor
     val currentColor = fgColor.copy(alpha = alpha)
@@ -90,10 +136,15 @@ fun StatusBar() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Actionbar(title: String, icon: Drawable, activity: ComponentActivity) {
+fun Actionbar(
+    scrollBehavior: TopAppBarScrollBehavior,
+    title: String,
+    icon: Drawable,
+    activity: ComponentActivity
+) {
 
     // Configure status bar to follow app bar color
-    StatusBar()
+    StatusBar(scrollBehavior)
 
     LargeTopAppBar(
         title = {
@@ -101,15 +152,16 @@ fun Actionbar(title: String, icon: Drawable, activity: ComponentActivity) {
                 Image(
                     modifier = Modifier
                         .size(60.dp)
-                        .padding(12.dp)
-                        .clip(RoundedCornerShape(7.dp)),
+                        .padding(8.dp)
+                        .clip(RoundedCornerShape(7.dp))
+                        .align(Alignment.CenterVertically),
                     painter = rememberDrawablePainter(icon),
                     contentDescription = title
                 )
                 Text(
                     text = title,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 25.sp,
+                    fontSize = 24.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier
@@ -127,6 +179,6 @@ fun Actionbar(title: String, icon: Drawable, activity: ComponentActivity) {
                 Icon(Icons.Filled.CheckCircle, "Save")
             }
         },
-        scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+        scrollBehavior = scrollBehavior
     )
 }
