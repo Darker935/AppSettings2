@@ -1,5 +1,6 @@
 package com.darker.appsettings.app.ui.screens
 
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.util.Log
 import android.widget.Toast
@@ -34,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.navigation.NavController
+import com.darker.appsettings.app.ui.activities.PerAppSettings
 import com.darker.appsettings.app.ui.dialogs.LoadingAppsDialog
 import com.darker.appsettings.app.ui.dialogs.appList
 import com.darker.appsettings.app.ui.lifecycle.OnLifecycleEvent
@@ -100,9 +102,12 @@ fun AppsScreen(navController: NavController) {
                                     RoundedCornerShape(14.dp)
                                 )
                                 .clickable {
-                                    Toast
-                                        .makeText(ctx, item.name, Toast.LENGTH_SHORT)
-                                        .show()
+                                    ctx.startActivity(
+                                        Intent()
+                                            .setClass(ctx, PerAppSettings().javaClass)
+                                            .putExtra("title", item.name)
+                                            .putExtra("packageName", item.packageName)
+                                    )
                                 }
                         ) {
                             Row(
@@ -159,6 +164,7 @@ fun AppScreenWithLifecycle(onLoad: () -> Unit) {
             Lifecycle.Event.ON_CREATE -> {
                 onLoad()
             }
+
             else -> {}
         }
     }

@@ -39,15 +39,8 @@ fun ScreenModel(
     ) {
         Log.i("Screen model:", "-> INsidINSideINSIdeINSIDeINSIDE")
         val alpha = scrollBehavior.state.collapsedFraction
-        val bgColor = TopAppBarDefaults.largeTopAppBarColors().containerColor
         val fgColor = TopAppBarDefaults.largeTopAppBarColors().scrolledContainerColor
-
-        val currentColor = fgColor.copy(
-            alpha = alpha,
-//            red = fgColor.red,
-//            green = fgColor.green,
-//            blue = fgColor.blue
-        )
+        val currentColor = fgColor.copy(alpha = alpha)
         systemUiController.setStatusBarColor(currentColor)
 
         Scaffold(
