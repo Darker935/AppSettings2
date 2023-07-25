@@ -141,11 +141,12 @@ fun AppsScreen(navController: NavController) {
                     }
                 }
 
-            AppScreenWithLifecycle {
-                Toast.makeText(ctx, "onLoad", Toast.LENGTH_SHORT).show()
-                showDialogListener = true
-                isLoaded = true
-                Log.i("Screen model:", "-> onLoad appScreen: $showDialogListener")
+                AppScreenWithLifecycle {
+                    Toast.makeText(ctx, "onLoad", Toast.LENGTH_SHORT).show()
+                    showDialogListener = true
+                    isLoaded = true
+                    Log.i("Screen model:", "-> onLoad appScreen: $showDialogListener")
+                }
             }
         }
     )
