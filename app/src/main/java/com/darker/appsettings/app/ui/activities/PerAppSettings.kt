@@ -3,6 +3,7 @@ package com.darker.appsettings.app.ui.activities
 import android.content.SharedPreferences
 import android.graphics.drawable.Drawable
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.twotone.ArrowBack
@@ -33,41 +35,62 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.edit
 import com.darker.appsettings.ui.theme.AppSettings2Theme
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 
 class PerAppSettings : ComponentActivity() {
 
+    companion object {
+        lateinit var app_icon: Drawable
+        lateinit var app_title: String
+        lateinit var app_package: String
+        lateinit var sharedPrefs: SharedPreferences
+    }
+
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val title = intent.getStringExtra("title") ?: packageName
-        val packageName = intent.getStringExtra("packageName") ?: packageName
-        val icon = packageManager.getApplicationIcon(packageName)
-        val sharedPrefs = getPreferences(MODE_PRIVATE)
+        app_title = intent.getStringExtra("title") ?: packageName
+        app_package = intent.getStringExtra("packageName") ?: packageName
+        app_icon = packageManager.getApplicationIcon(app_package)
+        sharedPrefs = getPreferences(MODE_PRIVATE)
+
         val prefsEnabledApps = sharedPrefs.getStringSet("enabled_apps", setOf())!!
         val enabledApps = HashSet<String>(prefsEnabledApps)
         val isAppEnabled = enabledApps.contains(packageName)
 
         setContent {
             AppSettings2Theme {
-                MainContent(enabledApps, sharedPrefs, packageName, title, icon, this) {
+                MainContent(app_title, app_icon, this) {
+
                     item {
-                        TextField(value = "A", onValueChange = {
-                        })
+                        SwitchButton(enabledApps, sharedPrefs, packageName)
+                    }
+
+                    item {
+                        var dpi_value = 0
+                        var font_size = 0
+
+                        EditIntPreference(app_package, "dpi", dpi_value, "DPI")
+                        EditIntPreference(app_package, "font", font_size, "FONT")
                     }
                 }
             }
@@ -75,12 +98,46 @@ class PerAppSettings : ComponentActivity() {
     }
 }
 
+@Composable
+fun EditIntPreference(
+    packageName: String,
+    preference: String,
+    value: Int,
+    label: String
+) {
+    val context = LocalContext.current
+    var mutableValue by remember { mutableIntStateOf(value) }
+    val pref = "${packageName}_${preference}"
+    mutableValue = PerAppSettings.sharedPrefs.getInt(pref, 0)
+    TextField(
+        label = { Text(label) },
+        placeholder = { Text(mutableValue.toString()) },
+        value = "$mutableValue",
+        onValueChange = { mutableValue = it.ifEmpty { "0" }.filter { c -> c.isDigit() }.toInt() },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        modifier = Modifier.onFocusChanged {
+            if (!it.isFocused) {
+                editPrefs(pref, mutableValue)
+                Toast.makeText(context, mutableValue.toString(), Toast.LENGTH_SHORT).show()
+            }
+        })
+}
+
+fun editPrefs(preference: String, value: Any) {
+    PerAppSettings.sharedPrefs.edit(commit = true) {
+        if (value is Int) putInt(preference, value)
+        if (value is Long) putLong(preference, value)
+        if (value is Float) putFloat(preference, value)
+        if (value is String) putString(preference, value)
+        if (value is Boolean) putBoolean(preference, value)
+        apply()
+    }
+
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainContent(
-    enabledApps: HashSet<String>,
-    sharedPrefs: SharedPreferences,
-    packageName: String,
     title: String,
     icon: Drawable,
     activity: PerAppSettings,
@@ -91,7 +148,6 @@ fun MainContent(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             Actionbar(scrollBehavior, title, icon, activity)
-            SwitchButton(enabledApps, sharedPrefs, packageName)
         },
         content = { innerPadding ->
             LazyColumn(
