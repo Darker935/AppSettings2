@@ -1,17 +1,23 @@
 package com.darker.appsettings.xposed.hooks.screen;
 
 import static com.darker.appsettings.xposed.Core.prefs;
-
-import android.content.res.Configuration;
-import android.content.res.Resources;
+import static com.darker.appsettings.xposed.hooks.screen.ScreenSettings.configuration;
+import static com.darker.appsettings.xposed.hooks.screen.ScreenSettings.metrics;
 
 public class ScreenSettings$Dpi {
     public static String key_ = "dpi";
 
     public static void hook(String packageName) {
-        int value = prefs.getInt(packageName + "_dpi", 0);
-        Resources cu = null;
-        Configuration config = cu.getConfiguration();
+        int wdp = prefs.getInt(packageName + "_dpi", 0);
+        float density = (float) metrics.widthPixels / wdp;
+        int hdp = (int) (metrics.heightPixels / density);
+        int dpi = (int) (160 * density);
+
+        metrics.density = density;
+        metrics.densityDpi = dpi;
+        configuration.densityDpi = dpi;
+        configuration.smallestScreenWidthDp = wdp;
+        configuration.screenHeightDp = hdp;
     }
 
 }

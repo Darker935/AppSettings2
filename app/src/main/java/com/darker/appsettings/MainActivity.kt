@@ -19,6 +19,9 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             AppSettings2Theme {
+                if (!isModuleActive()) {
+
+                }
                 // A surface container using the 'background' color from the theme
                 NavigationDrawerController()
             }

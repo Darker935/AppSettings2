@@ -9,6 +9,7 @@ import android.content.res.Resources;
 import android.util.DisplayMetrics;
 
 import de.robv.android.xposed.XC_MethodHook;
+import de.robv.android.xposed.XC_MethodReplacement;
 import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
 
@@ -31,10 +32,29 @@ public class ScreenSettings {
                         resources = context.getResources();
                         configuration = resources.getConfiguration();
                         metrics = resources.getDisplayMetrics();
-
+                        param.args[0] = getHookedContext(context);
                         super.beforeHookedMethod(param);
                     }
                 }
+        );
+    }
+
+    private static Context getHookedContext(Context context) {
+        ScreenSettings$Dpi.hook(context.getPackageName());
+        applyChanges();
+        return context.createConfigurationContext(configuration);
+    }
+
+    private static void applyChanges() {
+        XposedHelpers.findAndHookMethod(
+                Resources.class,
+                "getConfiguration",
+                XC_MethodReplacement.returnConstant(configuration)
+        );
+        XposedHelpers.findAndHookMethod(
+                Resources.class,
+                "getDisplayMetrics",
+                XC_MethodReplacement.returnConstant(metrics)
         );
     }
 

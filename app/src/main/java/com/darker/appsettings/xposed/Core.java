@@ -13,6 +13,7 @@ import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.IXposedHookZygoteInit;
 import de.robv.android.xposed.XC_MethodReplacement;
 import de.robv.android.xposed.XSharedPreferences;
+import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
 
@@ -39,7 +40,7 @@ public class Core implements IXposedHookZygoteInit, IXposedHookLoadPackage {
 
         if (prefs == null) return;
         else prefs.reload();
-        Set<String> enabledApps = prefs.getStringSet("enabled_apps", new HashSet<String>());
+        Set<String> enabledApps = prefs.getStringSet("enabled_apps", new HashSet<>());
 
         if (enabledApps.contains(lpparam.packageName)) {
             ScreenSettings.hook(lpparam);
@@ -47,9 +48,9 @@ public class Core implements IXposedHookZygoteInit, IXposedHookLoadPackage {
     }
 
     private void modifyModuleState(XC_LoadPackage.LoadPackageParam lpparam) {
+        XposedBridge.log("IsModuleActive -> hooking");
         XposedHelpers.findAndHookMethod(
-                MainActivity.class.getName(),
-                lpparam.classLoader,
+                MainActivity.class,
                 "isModuleActive",
                 XC_MethodReplacement.returnConstant(true));
     }
