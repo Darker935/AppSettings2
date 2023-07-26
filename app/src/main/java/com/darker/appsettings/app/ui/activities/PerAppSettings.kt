@@ -7,14 +7,15 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
@@ -27,6 +28,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
@@ -39,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -61,24 +64,43 @@ class PerAppSettings : ComponentActivity() {
 
         setContent {
             AppSettings2Theme {
-                val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-                Scaffold(
-                    modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-                    topBar = { Actionbar(scrollBehavior, title, icon, this) },
-                    content = { innerPadding ->
-                        LazyColumn(
-                            contentPadding = innerPadding,
-                            modifier = Modifier.fillMaxHeight()
-                        ) {
-                            item {
-                                SwitchButton(enabledApps, sharedPrefs, packageName)
-                            }
-                        }
+                MainContent(enabledApps, sharedPrefs, packageName, title, icon, this) {
+                    item {
+                        TextField(value = "A", onValueChange = {
+                        })
                     }
-                )
+                }
             }
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MainContent(
+    enabledApps: HashSet<String>,
+    sharedPrefs: SharedPreferences,
+    packageName: String,
+    title: String,
+    icon: Drawable,
+    activity: PerAppSettings,
+    content: LazyListScope.() -> Unit
+) {
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        topBar = {
+            Actionbar(scrollBehavior, title, icon, activity)
+            SwitchButton(enabledApps, sharedPrefs, packageName)
+        },
+        content = { innerPadding ->
+            LazyColumn(
+                contentPadding = innerPadding,
+                modifier = Modifier.fillMaxHeight(),
+                content = content
+            )
+        }
+    )
 }
 
 @Composable
@@ -88,25 +110,31 @@ fun SwitchButton(
     packageName: String
 ) {
     var isAppEnabled by remember { mutableStateOf(enabledApps.contains(packageName)) }
-    Column(
-        verticalArrangement = Arrangement.Center,
+    Box(
         modifier = Modifier
-            .padding(vertical = 20.dp, horizontal = 12.dp)
             .fillMaxWidth()
+            .padding(vertical = 20.dp, horizontal = 12.dp)
             .background(
-                color = MaterialTheme.colorScheme.primaryContainer,
-                shape = RoundedCornerShape(20.dp)
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                shape = RoundedCornerShape(25.dp)
             )
+            .clickable {
+                isAppEnabled = true
+            }
     ) {
         Text(
+            fontSize = 22.sp,
             text = "Enable module",
-            fontSize = 24.sp,
-            modifier = Modifier.padding(start = 15.dp),
+            textAlign = TextAlign.Start,
+            color = MaterialTheme.colorScheme.background,
+            modifier = Modifier
+                .padding(start = 15.dp)
+                .align(Alignment.CenterStart)
         )
         Switch(
             modifier = Modifier
-                .padding(10.dp)
-                .align(Alignment.End),
+                .padding(15.dp)
+                .align(Alignment.CenterEnd),
             checked = isAppEnabled,
             onCheckedChange = {
                 isAppEnabled = it
