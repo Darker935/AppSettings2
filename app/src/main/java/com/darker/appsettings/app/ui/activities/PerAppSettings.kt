@@ -3,16 +3,19 @@ package com.darker.appsettings.app.ui.activities
 import android.content.SharedPreferences
 import android.graphics.drawable.Drawable
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -22,6 +25,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.twotone.ArrowBack
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -34,6 +39,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableIntState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -43,8 +49,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -52,6 +62,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.edit
+import com.darker.appsettings.app.ui.activities.PerAppSettings.Companion.app_package
 import com.darker.appsettings.ui.theme.AppSettings2Theme
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
@@ -65,7 +76,6 @@ class PerAppSettings : ComponentActivity() {
         lateinit var sharedPrefs: SharedPreferences
     }
 
-    @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         app_title = intent.getStringExtra("title") ?: packageName
@@ -86,11 +96,12 @@ class PerAppSettings : ComponentActivity() {
                     }
 
                     item {
-                        var dpi_value = 0
-                        var font_size = 0
-
-                        EditIntPreference(app_package, "dpi", dpi_value, "DPI")
-                        EditIntPreference(app_package, "font", font_size, "FONT")
+                        val dpi_value = remember { getIntMutable(sharedPrefs, "dpi") }
+                        val font_size = remember { getIntMutable(sharedPrefs, "font") }
+                        CardModel {
+                            EditIntPreference(app_package, "dpi", dpi_value, "DPI (dp)")
+                            EditIntPreference(app_package, "font", font_size, "FONT (%)", 100)
+                        }
                     }
                 }
             }
@@ -99,28 +110,68 @@ class PerAppSettings : ComponentActivity() {
 }
 
 @Composable
+fun CardModel(content: @Composable ColumnScope.() -> Unit) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 20.dp)
+    ) {
+        Card(
+            elevation = CardDefaults.elevatedCardElevation(12.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    content()
+                }
+            }
+        }
+    }
+}
+
+fun getIntMutable(sharedPrefs: SharedPreferences, key: String): MutableIntState {
+    return mutableIntStateOf(sharedPrefs.getInt("${app_package}_${key}", 0))
+}
+
+@Composable
 fun EditIntPreference(
     packageName: String,
     preference: String,
-    value: Int,
-    label: String
+    value: MutableIntState,
+    label: String,
+    maxValue: Int = 0
 ) {
     val context = LocalContext.current
-    var mutableValue by remember { mutableIntStateOf(value) }
     val pref = "${packageName}_${preference}"
-    mutableValue = PerAppSettings.sharedPrefs.getInt(pref, 0)
     TextField(
         label = { Text(label) },
-        placeholder = { Text(mutableValue.toString()) },
-        value = "$mutableValue",
-        onValueChange = { mutableValue = it.ifEmpty { "0" }.filter { c -> c.isDigit() }.toInt() },
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-        modifier = Modifier.onFocusChanged {
-            if (!it.isFocused) {
-                editPrefs(pref, mutableValue)
-                Toast.makeText(context, mutableValue.toString(), Toast.LENGTH_SHORT).show()
+        placeholder = { Text(value.intValue.toString()) },
+        value = "${if (value.intValue == 0) "" else value.intValue}",
+        onValueChange = {
+            val intValue = it.ifEmpty { "0" }.filter { c -> c.isDigit() }.toInt()
+            if (maxValue != 0 && intValue > maxValue) {
+                value.value = maxValue
+            } else {
+                value.value = intValue
             }
-        })
+        },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.Transparent)
+            .padding(vertical = 4.dp, horizontal = 10.dp)
+            .onFocusChanged {
+                if (!it.isFocused) {
+                    editPrefs(pref, value.intValue)
+                }
+            }
+    )
+    Spacer(Modifier.height(6.dp))
 }
 
 fun editPrefs(preference: String, value: Any) {
@@ -166,6 +217,19 @@ fun SwitchButton(
     packageName: String
 ) {
     var isAppEnabled by remember { mutableStateOf(enabledApps.contains(packageName)) }
+    fun updatePrefs(b: Boolean) {
+        isAppEnabled = b
+        val editor = sharedPrefs.edit()
+        if (b) {
+            enabledApps.add(packageName)
+        } else {
+            enabledApps.remove(packageName)
+        }
+        editor.putStringSet("enabled_apps", enabledApps)
+        editor.apply()
+        editor.commit()
+    }
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -174,9 +238,8 @@ fun SwitchButton(
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
                 shape = RoundedCornerShape(25.dp)
             )
-            .clickable {
-                isAppEnabled = true
-            }
+            .semantics(mergeDescendants = true) { role = Role.Switch }
+            .clickable { updatePrefs(!isAppEnabled) }
     ) {
         Text(
             fontSize = 22.sp,
@@ -192,18 +255,7 @@ fun SwitchButton(
                 .padding(15.dp)
                 .align(Alignment.CenterEnd),
             checked = isAppEnabled,
-            onCheckedChange = {
-                isAppEnabled = it
-                val editor = sharedPrefs.edit()
-                if (it) {
-                    enabledApps.add(packageName)
-                } else {
-                    enabledApps.remove(packageName)
-                }
-                editor.putStringSet("enabled_apps", enabledApps)
-                editor.apply()
-                editor.commit()
-            }
+            onCheckedChange = { updatePrefs(it) }
         )
     }
 }
