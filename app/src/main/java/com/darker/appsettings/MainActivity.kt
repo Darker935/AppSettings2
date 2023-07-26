@@ -3,18 +3,17 @@ package com.darker.appsettings
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import com.darker.appsettings.app.ui.controller.NavigationDrawerController
-import com.darker.appsettings.app.ui.drawer.NavigationDrawer
 import com.darker.appsettings.ui.theme.AppSettings2Theme
 
 class MainActivity : ComponentActivity() {
+
+    companion object {
+        fun isModuleActive(): Boolean {
+            return false;
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 

@@ -8,12 +8,14 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -40,21 +42,18 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableIntState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -62,6 +61,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.edit
+import com.darker.appsettings.R
 import com.darker.appsettings.app.ui.activities.PerAppSettings.Companion.app_package
 import com.darker.appsettings.ui.theme.AppSettings2Theme
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
@@ -85,27 +85,56 @@ class PerAppSettings : ComponentActivity() {
 
         val prefsEnabledApps = sharedPrefs.getStringSet("enabled_apps", setOf())!!
         val enabledApps = HashSet<String>(prefsEnabledApps)
-        val isAppEnabled = enabledApps.contains(packageName)
 
         setContent {
             AppSettings2Theme {
+                val isAppEnabled = remember { mutableStateOf(enabledApps.contains(app_package)) }
+
                 MainContent(app_title, app_icon, this) {
 
-                    item {
-                        SwitchButton(enabledApps, sharedPrefs, packageName)
-                    }
+                    // Adding button to change module state (on / off)
+                    item { SwitchButton(enabledApps, sharedPrefs, app_package, isAppEnabled) }
 
-                    item {
-                        val dpi_value = remember { getIntMutable(sharedPrefs, "dpi") }
-                        val font_size = remember { getIntMutable(sharedPrefs, "font") }
-                        CardModel {
-                            EditIntPreference(app_package, "dpi", dpi_value, "DPI (dp)")
-                            EditIntPreference(app_package, "font", font_size, "FONT (%)", 100)
+                    if (!isAppEnabled.value) {
+                        item { AppDisabledWarning() }
+                    } else {
+                        item {
+                            val dpi_value = remember { getIntMutable(sharedPrefs, "dpi") }
+                            val font_size = remember { getIntMutable(sharedPrefs, "font") }
+                            CardModel {
+                                EditIntPreference(app_package, "dpi", dpi_value, "DPI (dp)")
+                                EditIntPreference(app_package, "font", font_size, "FONT (%)", 100)
+                            }
                         }
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+fun AppDisabledWarning() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(top = 100.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Image(
+            painter = painterResource(R.drawable.app_not_enabled),
+            contentDescription = "App not enabled",
+            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.secondary.copy(0.7f)),
+            modifier = Modifier.size(80.dp)
+        )
+        Text(
+            fontSize = 19.sp,
+            text = "Click on Switch to enable module",
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.secondary.copy(0.7f),
+            modifier = Modifier.padding(top = 25.dp)
+        )
     }
 }
 
@@ -146,7 +175,6 @@ fun EditIntPreference(
     label: String,
     maxValue: Int = 0
 ) {
-    val context = LocalContext.current
     val pref = "${packageName}_${preference}"
     TextField(
         label = { Text(label) },
@@ -214,11 +242,12 @@ fun MainContent(
 fun SwitchButton(
     enabledApps: HashSet<String>,
     sharedPrefs: SharedPreferences,
-    packageName: String
+    packageName: String,
+    isAppEnabled: MutableState<Boolean>
 ) {
-    var isAppEnabled by remember { mutableStateOf(enabledApps.contains(packageName)) }
+
     fun updatePrefs(b: Boolean) {
-        isAppEnabled = b
+        isAppEnabled.value = b
         val editor = sharedPrefs.edit()
         if (b) {
             enabledApps.add(packageName)
@@ -238,8 +267,7 @@ fun SwitchButton(
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
                 shape = RoundedCornerShape(25.dp)
             )
-            .semantics(mergeDescendants = true) { role = Role.Switch }
-            .clickable { updatePrefs(!isAppEnabled) }
+            .clickable { updatePrefs(!isAppEnabled.value) }
     ) {
         Text(
             fontSize = 22.sp,
@@ -254,7 +282,7 @@ fun SwitchButton(
             modifier = Modifier
                 .padding(15.dp)
                 .align(Alignment.CenterEnd),
-            checked = isAppEnabled,
+            checked = isAppEnabled.value,
             onCheckedChange = { updatePrefs(it) }
         )
     }

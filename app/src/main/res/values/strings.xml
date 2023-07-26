@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">App Settings 2</string>
+    <string name="app_module_summary">Per app settings module, based on old XposedAppSettings</string>
 </resources>
