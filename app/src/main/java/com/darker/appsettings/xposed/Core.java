@@ -1,6 +1,9 @@
 package com.darker.appsettings.xposed;
 
+import static com.darker.appsettings.xposed.Utils.isModuleEnabled;
+
 import android.content.res.XModuleResources;
+import android.os.Bundle;
 
 import com.darker.appsettings.Constants;
 import com.darker.appsettings.MainActivity;
@@ -11,7 +14,7 @@ import java.util.Set;
 
 import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.IXposedHookZygoteInit;
-import de.robv.android.xposed.XC_MethodReplacement;
+import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XSharedPreferences;
 import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
@@ -27,6 +30,9 @@ public class Core implements IXposedHookZygoteInit, IXposedHookLoadPackage {
         resources = XModuleResources.createInstance(startupParam.modulePath, null);
         prefs = getModulePrefs();
 
+        XposedBridge.log("Zygote - Package name -> " + Constants.PACKAGE_NAME);
+        XposedBridge.log("Zygote - MainActivity -> " + MainActivity.class.getName());
+
         if (prefs != null) {
             prefs.reload();
         }
@@ -34,8 +40,32 @@ public class Core implements IXposedHookZygoteInit, IXposedHookLoadPackage {
 
     @Override
     public void handleLoadPackage(XC_LoadPackage.LoadPackageParam lpparam) throws Throwable {
+        XposedBridge.log("Loading package -> " + lpparam.packageName);
+        XposedBridge.log("Package name -> " + Constants.PACKAGE_NAME);
+
         if (lpparam.packageName.equals(Constants.PACKAGE_NAME)) {
-            modifyModuleState(lpparam);
+            XposedHelpers.findAndHookMethod(
+                    MainActivity.class.getName(),
+                    lpparam.classLoader,
+                    "onCreate",
+                    Bundle.class,
+                    new XC_MethodHook() {
+                        @Override
+                        protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                            XposedBridge.log("On create (before/before super): isAppEnabled = " + isModuleEnabled());
+                            super.beforeHookedMethod(param);
+                            XposedBridge.log("On create (before/after super): isAppEnabled = " + isModuleEnabled());
+                        }
+
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                            XposedBridge.log("On create (after/before super): isAppEnabled = " + isModuleEnabled());
+                            super.afterHookedMethod(param);
+                            XposedBridge.log("On create (after/after super): isAppEnabled = " + isModuleEnabled());
+                        }
+                    }
+            );
+            modifyModuleState();
         }
 
         if (prefs == null) return;
@@ -47,12 +77,22 @@ public class Core implements IXposedHookZygoteInit, IXposedHookLoadPackage {
         }
     }
 
-    private void modifyModuleState(XC_LoadPackage.LoadPackageParam lpparam) {
+    private void modifyModuleState() {
         XposedBridge.log("IsModuleActive -> hooking");
+        XposedBridge.log("Before hook: isAppEnabled = " + isModuleEnabled());
         XposedHelpers.findAndHookMethod(
-                MainActivity.class,
-                "isModuleActive",
-                XC_MethodReplacement.returnConstant(true));
+                Utils.class,
+                "isModuleEnabled",
+                new XC_MethodHook() {
+                    @Override
+                    protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                        XposedBridge.log("-> Setting result: " + true);
+                        param.setResult(true);
+                    }
+                }
+        );
+        XposedBridge.log("After hook: isAppEnabled = " + isModuleEnabled());
+        XposedBridge.log("MainActivity: " + MainActivity.class.getName());
     }
 
     public static XSharedPreferences getModulePrefs() {

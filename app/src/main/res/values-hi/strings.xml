@@ -1,5 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">App Settings 2</string>
-    <string name="app_module_summary">Per app settings module, based on old XposedAppSettings</string>
     <string name="framework_not_running_message">Click on the FIX option to solve this problem, enabling APP Settings 2 in LSPosed</string>
 </resources>
