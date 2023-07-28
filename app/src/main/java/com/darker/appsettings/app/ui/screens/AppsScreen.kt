@@ -50,7 +50,6 @@ fun AppsScreen(navController: NavController) {
     val title = "Apps"
     var isLoaded by remember { mutableStateOf(false) }
     var showDialogListener by remember { mutableStateOf(false) }
-    var startScreenLoad by remember { mutableStateOf(false) }
     val ctx = LocalContext.current
 
     Log.i("• Loading AppsScreen", "")
@@ -64,24 +63,20 @@ fun AppsScreen(navController: NavController) {
         title,
         navController,
         content = { innerPadding ->
-
             if (showDialogListener && isLoaded) {
+                // Current screen is loaded, showing progress dialog
                 Log.i(
                     "Screen model:",
                     "-> ShowDialogListener: (true), isLoaded: ($isLoaded)"
                 )
-//                var loadedApps = remember { mutableIntStateOf(0) }
+
                 LoadingAppsDialog(pm!!) {
                     Toast.makeText(ctx, "onFinish", Toast.LENGTH_SHORT).show()
                     showDialogListener = false
                 }
-                Log.i("Cu", "DESGRAÇA DA PORRA DO DIALOG VSFD")
-//                if (totalApps == 0) {
-//                    LoadApps(pm!!, loadedApps)
-//                }
-//                Log.i("• After Loading apps dialog:", "after totalApps=$totalApps")
-//                showDialogListener = false
+
             } else if (isLoaded) {
+                // urreCnt screen is loaded, but dialog shows off
                 Log.i(
                     "Screen model:",
                     "-> ShowLazyColumn: (true), ShowDialog: ($showDialogListener), isLoaded: ($isLoaded)"
@@ -164,7 +159,6 @@ fun AppScreenWithLifecycle(onLoad: () -> Unit) {
             Lifecycle.Event.ON_CREATE -> {
                 onLoad()
             }
-
             else -> {}
         }
     }

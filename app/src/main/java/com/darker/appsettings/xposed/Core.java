@@ -65,7 +65,7 @@ public class Core implements IXposedHookZygoteInit, IXposedHookLoadPackage {
                         }
                     }
             );
-            modifyModuleState();
+            modifyModuleState(lpparam);
         }
 
         if (prefs == null) return;
@@ -77,22 +77,29 @@ public class Core implements IXposedHookZygoteInit, IXposedHookLoadPackage {
         }
     }
 
-    private void modifyModuleState() {
+    private void modifyModuleState(XC_LoadPackage.LoadPackageParam lpparam) {
         XposedBridge.log("IsModuleActive -> hooking");
-        XposedBridge.log("Before hook: isAppEnabled = " + isModuleEnabled());
+//        XposedBridge.log("Before hook: isAppEnabled = " + isModuleEnabled());
         XposedHelpers.findAndHookMethod(
-                Utils.class,
+                MainActivity.class.getName(),
+                lpparam.classLoader,
                 "isModuleEnabled",
                 new XC_MethodHook() {
                     @Override
                     protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                        XposedBridge.log("-> Setting result: " + true);
                         param.setResult(true);
+                    }
+
+                    @Override
+                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                        XposedBridge.log("After hook / before super: " + param.getResult());
+                        super.afterHookedMethod(param);
+                        XposedBridge.log("After hook / after super: " + param.getResult());
                     }
                 }
         );
-        XposedBridge.log("After hook: isAppEnabled = " + isModuleEnabled());
-        XposedBridge.log("MainActivity: " + MainActivity.class.getName());
+//        XposedBridge.log("After hook: isAppEnabled = " + isModuleEnabled());
+//        XposedBridge.log("MainActivity: " + MainActivity.class.getName());
     }
 
     public static XSharedPreferences getModulePrefs() {

@@ -18,7 +18,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight.Companion.Bold
@@ -48,7 +47,6 @@ fun FrameworkNotRunning() {
             dismissOnClickOutside = false
         )
     ) {
-        val lifecycleOwner = LocalLifecycleOwner.current
         Surface(
             shape = RoundedCornerShape(25.dp),
             color = AlertDialogDefaults.containerColor,
@@ -107,26 +105,16 @@ fun FrameworkNotRunning() {
                     ) {
                         Text(text = "Cancel", fontWeight = Bold)
                     }
-//                Spacer(Modifier.width(10.dp))
+
                     Button(
                         onClick = {
                             openLSPosedSettings()
                             exitProcess(0)
-//                            var isFirstStart = true;
-//                            val observer = LifecycleEventObserver { _, event ->
-//                                if (event == Lifecycle.Event.ON_START && !isFirstStart) {
-//                                    exitProcess(0)
-//                                }
-//                            }
-//                            lifecycleOwner.lifecycle.addObserver(observer)
-//                            isFirstStart = false
                         },
                         Modifier
                             .weight(1f)
                             .padding(start = 10.dp)
-                    ) {
-                        Text(text = "Fix", fontWeight = Bold)
-                    }
+                    ) { Text(text = "Fix", fontWeight = Bold) }
                 }
             }
         }
@@ -135,6 +123,7 @@ fun FrameworkNotRunning() {
 }
 
 fun openLSPosedSettings() {
+    // Starting module settings on LSPosed
     val text = "am start -c org.lsposed.manager.LAUNCH_MANAGER -d " + Uri.Builder().scheme("module")
         .encodedAuthority(Constants.PACKAGE_NAME + ":0")
         .build() + " com.android.shell/com.android.shell.BugreportWarningActivity"
