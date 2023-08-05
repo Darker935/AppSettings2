@@ -3,7 +3,6 @@ package com.darker.appsettings.app.ui.model
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
-import android.util.Log
 import androidx.compose.runtime.MutableState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -46,7 +45,7 @@ class LoadingAppsThreadModel : ViewModel() {
                     )
 
                     loadedApps.value++
-                    Log.i("Loaded apps", "loadedApps=${loadedApps.value}, totalApps=$totalApps")
+//                    Log.i(Constants.TAG, "• Thread > loadedApps=${loadedApps.value} / totalApps=$totalApps")
                 }
 
             }

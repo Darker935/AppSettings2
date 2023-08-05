@@ -25,6 +25,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.darker.appsettings.Constants
 import com.darker.appsettings.app.ui.lifecycle.OnLifecycleEvent
 import com.darker.appsettings.app.ui.model.AppsInfo
 import com.darker.appsettings.app.ui.model.LoadingAppsThreadModel
@@ -37,9 +38,12 @@ fun LoadingAppsDialog(pm: PackageManager, onFinish: () -> Unit) {
     var startLoadApps by remember { mutableStateOf(false) }
     var loadedApps = remember { mutableStateOf(0) }
 
-    Log.i("• Before Loading apps dialog:", "before totalApps=$totalApps")
+    // All apps are currently loaded
+    if (totalApps != 0) {
+        return onFinish()
+    }
 
-    Log.i("Anything", "----> startDialog condition")
+    Log.i(Constants.TAG, "• Before dialog: totalApps=$totalApps")
 
     val viewModel: LoadingAppsThreadModel = viewModel()
 
@@ -73,21 +77,21 @@ fun LoadingAppsDialog(pm: PackageManager, onFinish: () -> Unit) {
                     .padding(top = 15.dp)
                     .align(Alignment.CenterHorizontally)
             )
-            Log.i("• Dialog showing", "• (1) showing dialog")
+//            Log.i(Constants.TAG, "• Composing Dialog")
         }
     }
 
     if (startLoadApps) {
-        Log.i("ANything", "----> startLoadApps condition")
+        Log.i(Constants.TAG, "• startLoadApps = true / totalApps = $totalApps")
         if (totalApps == 0) {
-            viewModel.startThread(pm, loadedApps, {
+            viewModel.startThread(pm, loadedApps) {
                 onFinish()
-            })
+            }
         }
     }
 
     DialogWithLifecycle {
-        Log.i("Anything", "-----> Load dialog lifecycle")
+        Log.i(Constants.TAG, "• DialogLifecycle")
         startLoadApps = true
     }
 }

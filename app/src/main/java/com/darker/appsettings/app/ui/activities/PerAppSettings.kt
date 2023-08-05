@@ -1,8 +1,11 @@
 package com.darker.appsettings.app.ui.activities
 
+import android.content.Context
 import android.content.SharedPreferences
 import android.graphics.drawable.Drawable
 import android.os.Bundle
+import android.widget.Toast
+import android.widget.Toast.LENGTH_SHORT
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
@@ -25,7 +28,6 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.twotone.ArrowBack
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -53,6 +55,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -61,8 +64,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.edit
+import com.darker.appsettings.Constants
 import com.darker.appsettings.R
 import com.darker.appsettings.app.ui.activities.PerAppSettings.Companion.app_package
+import com.darker.appsettings.app.ui.dropdown.PerAppSettingsMenu
+import com.darker.appsettings.shell
 import com.darker.appsettings.ui.theme.AppSettings2Theme
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
@@ -176,6 +182,7 @@ fun EditIntPreference(
     maxValue: Int = 0
 ) {
     val pref = "${packageName}_${preference}"
+    val context = LocalContext.current
     TextField(
         label = { Text(label) },
         placeholder = { Text(value.intValue.toString()) },
@@ -195,14 +202,14 @@ fun EditIntPreference(
             .padding(vertical = 4.dp, horizontal = 10.dp)
             .onFocusChanged {
                 if (!it.isFocused) {
-                    editPrefs(pref, value.intValue)
+                    editPrefs(pref, value.intValue, context)
                 }
             }
     )
     Spacer(Modifier.height(6.dp))
 }
 
-fun editPrefs(preference: String, value: Any) {
+fun editPrefs(preference: String, value: Any, context: Context) {
     PerAppSettings.sharedPrefs.edit(commit = true) {
         if (value is Int) putInt(preference, value)
         if (value is Long) putLong(preference, value)
@@ -210,6 +217,7 @@ fun editPrefs(preference: String, value: Any) {
         if (value is String) putString(preference, value)
         if (value is Boolean) putBoolean(preference, value)
         apply()
+        shell.makeWorldReadable("${context.dataDir.path}/shared_prefs/${Constants.PREFS_NAME}")
     }
 
 }
@@ -245,7 +253,7 @@ fun SwitchButton(
     packageName: String,
     isAppEnabled: MutableState<Boolean>
 ) {
-
+    Toast.makeText(LocalContext.current, enabledApps.toString(), LENGTH_SHORT).show()
     fun updatePrefs(b: Boolean) {
         isAppEnabled.value = b
         val editor = sharedPrefs.edit()
@@ -339,8 +347,18 @@ fun Actionbar(
             }
         },
         actions = {
-            IconButton(onClick = { /* doSomething() */ }) {
-                Icon(Icons.Filled.CheckCircle, "Save")
+            var showMenu = remember { mutableStateOf(false) }
+            if (showMenu.value) {
+                PerAppSettingsMenu(showMenu, app_package)
+            }
+            IconButton(onClick = {
+                showMenu.value = true
+            }) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_save_settings),
+                    contentDescription = "Save",
+                    modifier = Modifier.padding(3.dp)
+                )
             }
         },
         scrollBehavior = scrollBehavior

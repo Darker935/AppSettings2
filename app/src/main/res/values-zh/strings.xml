@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="framework_not_running_message">Click on the FIX option to solve this problem, enabling APP Settings 2 in LSPosed</string>
+    <string name="save_prefs">Do you want to save preferences and kill the app process?</string>
 </resources>

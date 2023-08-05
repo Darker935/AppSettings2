@@ -2,4 +2,5 @@
     <string name="app_name">App Settings 2</string>
     <string name="app_module_summary">Per app settings module, based on old XposedAppSettings</string>
     <string name="framework_not_running_message">Click on the FIX option to solve this problem, enabling APP Settings 2 in LSPosed</string>
+    <string name="save_prefs">Do you want to save preferences and kill the app process?</string>
 </resources>

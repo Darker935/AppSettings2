@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
@@ -35,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.navigation.NavController
+import com.darker.appsettings.Constants
 import com.darker.appsettings.app.ui.activities.PerAppSettings
 import com.darker.appsettings.app.ui.dialogs.LoadingAppsDialog
 import com.darker.appsettings.app.ui.dialogs.appList
@@ -43,6 +45,7 @@ import com.darker.appsettings.app.ui.model.ScreenModel
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 
 var pm: PackageManager? = null
+var itemsList: (LazyListScope.() -> Unit)? = null;
 
 @Composable
 fun AppsScreen(navController: NavController) {
@@ -52,7 +55,7 @@ fun AppsScreen(navController: NavController) {
     var showDialogListener by remember { mutableStateOf(false) }
     val ctx = LocalContext.current
 
-    Log.i("• Loading AppsScreen", "")
+    Log.i(Constants.TAG, "Loading: AppsScreen.kt")
 
     // If pm is null, put current PackageManager on it
     if (pm == null) {
@@ -63,91 +66,96 @@ fun AppsScreen(navController: NavController) {
         title,
         navController,
         content = { innerPadding ->
+            Log.i(Constants.TAG, "Loading: AppsScreen.kt > ScreenModel")
             if (showDialogListener && isLoaded) {
                 // Current screen is loaded, showing progress dialog
                 Log.i(
-                    "Screen model:",
-                    "-> ShowDialogListener: (true), isLoaded: ($isLoaded)"
+                    Constants.TAG,
+                    "LoadingAppsDialog (showDialogListener = true / isLoaded = true)"
                 )
-
                 LoadingAppsDialog(pm!!) {
+                    Log.i(Constants.TAG, "LoadingAppsDialog onFinish()")
                     Toast.makeText(ctx, "onFinish", Toast.LENGTH_SHORT).show()
                     showDialogListener = false
                 }
 
             } else if (isLoaded) {
-                // urreCnt screen is loaded, but dialog shows off
+                // Current screen is loaded, but dialog shows off
                 Log.i(
-                    "Screen model:",
-                    "-> ShowLazyColumn: (true), ShowDialog: ($showDialogListener), isLoaded: ($isLoaded)"
+                    Constants.TAG,
+                    "\n\nLazyColumn:\n(showDialogListener = $showDialogListener / isLoaded: $isLoaded / itemsList.isNull() = ${itemsList == null})"
                 )
                 LazyColumn(
                     contentPadding = innerPadding,
                     verticalArrangement = Arrangement.spacedBy(15.dp),
-                ) {
-                    appList.sortWith(compareBy { it.name })
-                    items(appList) { item ->
-                        Card(
-                            elevation = CardDefaults.cardElevation(3.dp),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 6.dp)
-                                .background(
-                                    CardDefaults.cardColors().containerColor.copy(0.4f),
-                                    RoundedCornerShape(14.dp)
-                                )
-                                .clickable {
-                                    ctx.startActivity(
-                                        Intent()
-                                            .setClass(ctx, PerAppSettings().javaClass)
-                                            .putExtra("title", item.name)
-                                            .putExtra("packageName", item.packageName)
-                                    )
-                                }
-                        ) {
-                            Row(
-                                Modifier
+                    content = itemsList ?: {
+                        appList.sortWith(compareBy { it.name })
+                        items(appList) { item ->
+                            Card(
+                                elevation = CardDefaults.cardElevation(3.dp),
+                                modifier = Modifier
                                     .fillMaxWidth()
-                                    .align(Alignment.Start)
+                                    .padding(horizontal = 6.dp)
+                                    .background(
+                                        CardDefaults.cardColors().containerColor.copy(0.4f),
+                                        RoundedCornerShape(14.dp)
+                                    )
+                                    .clickable {
+                                        ctx.startActivity(
+                                            Intent()
+                                                .setClass(ctx, PerAppSettings().javaClass)
+                                                .putExtra("title", item.name)
+                                                .putExtra("packageName", item.packageName)
+                                        )
+                                    }
                             ) {
-                                Image(
-                                    modifier = Modifier
-                                        .size(70.dp)
-                                        .padding(12.dp)
-                                        .clip(RoundedCornerShape(7.dp)),
-                                    painter = rememberDrawablePainter(item.icon),
-                                    contentDescription = item.name
-                                )
-                                Column(
+                                Row(
                                     Modifier
                                         .fillMaxWidth()
-                                        .align(Alignment.CenterVertically)
+                                        .align(Alignment.Start)
                                 ) {
-                                    Text(
-                                        text = item.name,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 18.sp,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
+                                    Image(
+                                        modifier = Modifier
+                                            .size(70.dp)
+                                            .padding(12.dp)
+                                            .clip(RoundedCornerShape(7.dp)),
+                                        painter = rememberDrawablePainter(item.icon),
+                                        contentDescription = item.name
                                     )
-                                    Text(
-                                        text = item.packageName,
-                                        fontStyle = FontStyle.Italic,
-                                        fontSize = 13.sp,
-                                        maxLines = 1
-                                    )
+                                    Column(
+                                        Modifier
+                                            .fillMaxWidth()
+                                            .align(Alignment.CenterVertically)
+                                    ) {
+                                        Text(
+                                            text = item.name,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 18.sp,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        Text(
+                                            text = item.packageName,
+                                            fontStyle = FontStyle.Italic,
+                                            fontSize = 13.sp,
+                                            maxLines = 1
+                                        )
+                                    }
                                 }
                             }
                         }
-                    }
+                    })
+            }
+            AppScreenWithLifecycle(
+                onLoad = {
+                    Log.i(
+                        Constants.TAG,
+                        "AppScreenWithLifecycle onLoad(): showDialogListener = $showDialogListener / isLoaded = $isLoaded"
+                    )
+                    showDialogListener = true
+                    isLoaded = true
                 }
-            }
-            AppScreenWithLifecycle {
-                Toast.makeText(ctx, "onLoad", Toast.LENGTH_SHORT).show()
-                showDialogListener = true
-                isLoaded = true
-                Log.i("Screen model:", "-> onLoad appScreen: $showDialogListener")
-            }
+            )
         }
     )
 }
