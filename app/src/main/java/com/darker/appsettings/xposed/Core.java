@@ -29,7 +29,6 @@ public class Core implements IXposedHookZygoteInit, IXposedHookLoadPackage {
     public void initZygote(StartupParam startupParam) {
         resources = XModuleResources.createInstance(startupParam.modulePath, null);
     }
-
     @SuppressLint("PrivateApi")
     @Override
     public void handleLoadPackage(XC_LoadPackage.LoadPackageParam lpparam) {

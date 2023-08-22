@@ -51,6 +51,7 @@ var itemsList: (LazyListScope.() -> Unit)? = null;
 fun AppsScreen(navController: NavController) {
 
     val title = "Apps"
+    var searchText by remember { mutableStateOf("") }
     var isLoaded by remember { mutableStateOf(false) }
     var showDialogListener by remember { mutableStateOf(false) }
     val ctx = LocalContext.current
@@ -62,6 +63,7 @@ fun AppsScreen(navController: NavController) {
         pm = LocalContext.current.packageManager
     }
 
+    Log.i(Constants.TAG, "----> UPDATING: $searchText <----")
     ScreenModel(
         title,
         navController,
@@ -89,8 +91,20 @@ fun AppsScreen(navController: NavController) {
                     contentPadding = innerPadding,
                     verticalArrangement = Arrangement.spacedBy(15.dp),
                     content = itemsList ?: {
-                        appList.sortWith(compareBy { it.name })
-                        items(appList) { item ->
+                        var customList = appList.filter {
+                            it.name.contains(
+                                searchText,
+                                true
+                            ) || it.packageName.contains(searchText, true)
+                        }.toMutableList()
+
+                        customList.sortWith(compareBy { it.name })
+
+                        Log.i(
+                            Constants.TAG,
+                            "Loading again: $searchText / Size: ${customList.size}"
+                        )
+                        items(customList) { item ->
                             Card(
                                 elevation = CardDefaults.cardElevation(3.dp),
                                 modifier = Modifier
@@ -156,6 +170,13 @@ fun AppsScreen(navController: NavController) {
                     isLoaded = true
                 }
             )
+        },
+        function = {
+            if (it.isNotEmpty()) {
+                itemsList = null
+                searchText = it
+            }
+            Log.i(Constants.TAG, "----> AppsScreen: $searchText / Iterator: $it")
         }
     )
 }

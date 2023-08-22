@@ -1,8 +1,11 @@
 package com.darker.appsettings.xposed.hooks;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.Context;
 import android.content.res.Configuration;
+import android.content.res.Resources;
+import android.os.Bundle;
 import android.util.DisplayMetrics;
 
 import com.darker.appsettings.xposed.hooks.screen.ScreenSettings;
@@ -24,7 +27,7 @@ public class MainHooks {
         MainHooks thisClass = this;
         XposedHelpers.findAndHookConstructor(
                 "android.content.res.ResourcesImpl",
-                lpparam.classLoader,
+                null,
                 Class.forName("android.content.res.AssetManager"),
                 DisplayMetrics.class, Configuration.class,
                 Class.forName("android.view.DisplayAdjustments"),
@@ -68,5 +71,89 @@ public class MainHooks {
                     }
                 }
         );
+
+        XposedHelpers.findAndHookMethod(
+                Class.forName("android.app.ContextImpl").getName(),
+                lpparam.classLoader,
+                "getResources",
+                new XC_MethodHook() {
+                    @Override
+                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                        var resources = (Resources) param.getResult();
+                        var config = resources.getConfiguration();
+                        var metrics = resources.getDisplayMetrics();
+
+                        ScreenSettings.hook(lpparam, metrics, config);
+
+                        XposedBridge.log(
+                                "\nDisplay metrics:\n"
+                                        + "------- Before setResult Context impl ---------"
+                                        + "\n(M) Density: " + metrics.density
+                                        + "\n(M) Density DPI: " + metrics.densityDpi
+                                        + "\n(C) Density DPI: " + config.densityDpi
+                                        + "\n(C) Smallest Width: " + config.smallestScreenWidthDp
+                                        + "\n(C) Screen height: " + config.screenHeightDp
+                                        + "\n(C) Screen width: " + config.screenWidthDp
+                        );
+                        param.setResult(new Resources(resources.getAssets(), metrics, config));
+
+                        resources = (Resources) param.getResult();
+                        config = resources.getConfiguration();
+                        metrics = resources.getDisplayMetrics();
+
+                        XposedBridge.log(
+                                "\n\nDisplayMetrics"
+                                        + "------- After setResult Context impl ---------"
+                                        + "\n(M) Density: " + metrics.density
+                                        + "\n(M) Density DPI: " + metrics.densityDpi
+                                        + "\n(C) Density DPI: " + config.densityDpi
+                                        + "\n(C) Smallest Width: " + config.smallestScreenWidthDp
+                                        + "\n(C) Screen height: " + config.screenHeightDp
+                                        + "\n(C) Screen width: " + config.screenWidthDp
+                        );
+                    }
+                }
+        );
+
+        XposedHelpers.findAndHookMethod(
+                Activity.class.getName(),
+                lpparam.classLoader,
+                "onCreate",
+                Bundle.class,
+                new XC_MethodHook() {
+                    @Override
+                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                        var className = param.thisObject.getClass().getName();
+                        var resources = ((Activity) param.thisObject).getResources();
+                        var config = resources.getConfiguration();
+                        var metrics = resources.getDisplayMetrics();
+
+                        XposedBridge.log(
+                                "\nDisplay metrics:\n\n\n\n\n\n-------- onCreate after hook -------------------"
+                                        + "\n (" + className + ")"
+                                        + "\n(M) Density: " + metrics.density
+                                        + "\n(M) Density DPI: " + metrics.densityDpi
+                                        + "\n(C) Density DPI: " + config.densityDpi
+                                        + "\n(C) Smallest Width: " + config.smallestScreenWidthDp
+                                        + "\n(C) Screen height: " + config.screenHeightDp
+                                        + "\n(C) Screen width: " + config.screenWidthDp
+                        );
+                        super.afterHookedMethod(param);
+                    }
+                }
+        );
+
+//        XposedHelpers.findAndHookMethod(
+//                Context.class.getName(),
+//                lpparam.classLoader,
+//                "getResources",
+//                new XC_MethodHook() {
+//                    @Override
+//                    protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+////                        XposedBridge.log("Stack trace: \n\n" + TextUtils.join("\n",Thread.currentThread().getStackTrace()));
+//                        super.beforeHookedMethod(param);
+//                    }
+//                }
+//        );
     }
 }

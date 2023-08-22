@@ -8,10 +8,15 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.navigation.NavController
+import com.darker.appsettings.Constants
 import com.darker.appsettings.app.ui.appbar.LTopAppBar
 import com.darker.appsettings.app.ui.drawer.DrawerContent
 import com.darker.appsettings.app.ui.drawer.NavigationDrawer
@@ -23,21 +28,22 @@ fun ScreenModel(
     title: String,
     navController: NavController,
     content: @Composable (PaddingValues) -> Unit,
-    function: @Composable () -> Unit = {}
+    function: @Composable (String) -> Unit = {}
 ) {
 
-    val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val systemUiController = rememberSystemUiController()
-    Log.i("Screen model:", "-> INside")
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    var searchText by remember { mutableStateOf("") }
+
     NavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
             DrawerContent(navController = navController, scope = scope, drawerState = drawerState)
         }
     ) {
-        Log.i("Screen model:", "-> INsidINSideINSIdeINSIDeINSIDE")
+
         val alpha = scrollBehavior.state.collapsedFraction
         val fgColor = TopAppBarDefaults.largeTopAppBarColors().scrolledContainerColor
         val currentColor = fgColor.copy(alpha = alpha)
@@ -46,11 +52,15 @@ fun ScreenModel(
         Scaffold(
             modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
             topBar = {
-                LTopAppBar(title, scope, drawerState, scrollBehavior)
+                LTopAppBar(title, scope, drawerState, scrollBehavior) {
+                    searchText = it
+                    Log.i(Constants.TAG, "----> ScreenModel: $searchText")
+
+                }
             },
             content = content
         )
     }
 
-    function()
+    function(searchText)
 }
